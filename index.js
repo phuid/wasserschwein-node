@@ -169,7 +169,7 @@ async function water_your_plants(channel) {
     });
     sendTopPlayersMessage(channel);
     watered.push({userId: user.id, time: getTimeDifferenceString(message.createdTimestamp)});
-    message.edit({ content: `## ${cite}\n${watered.length} ${(watered.length > 1) ? "people have" : "person has"} been watered\n` + watered.map(w => `<@${w.userId}>: \`${w.time}\``).join("\n")});
+    message.edit({ content: `## ${cite}\n${watered.length} ${(watered.length == 1) ? "person has" : "people have"} been watered\n` + watered.map(w => `<@${w.userId}>: \`${w.time}\``).join("\n")});
   });
 
   collector.on("remove", (reaction, user) => {
@@ -184,7 +184,7 @@ async function water_your_plants(channel) {
       });
     }
     watered = watered.filter(item => item.userId !== user.id);
-    message.edit({ content: `## ${cite}\n${watered.length} ${(watered.length > 1) ? "people have" : "person has"} been watered\n` + watered.map(w => `<@${w.userId}>: \`${w.time}\``).join("\n")});
+    message.edit({ content: `## ${cite}\n${watered.length} ${(watered.length == 1) ? "person has" : "people have"} been watered\n` + watered.map(w => `<@${w.userId}>: \`${w.time}\``).join("\n")});
   });
 
   collector.on("end", (collected) => {
