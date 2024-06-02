@@ -124,9 +124,26 @@ const collectorFilter = (reaction, user) => {
   return reaction.emoji.name === "💦" && user.id != "1232769193515155580";
 };
 
+function getTimeString(time) {
+  const seconds = time / 1000;
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  return `${String(hours).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}:${String(seconds % 60).padStart(6, '0')}`;
+}
+
+function getTimeDifferenceString(start, end = Date.now()) {
+  console.log(start, end);
+  return getTimeString(end - start);
+}
+
 async function water_your_plants(channel) {
+
+  // array to store times of watering
+  let watered = [];
+
+  let cite = config.STRINGS[Math.floor(Math.random() * config.STRINGS.length)];
   const message = await channel.send({
-    content: config.STRINGS[Math.floor(Math.random() * config.STRINGS.length)],
+    content: "## " + cite,
     fetchReply: true,
   });
   message.react("💦");
@@ -151,6 +168,8 @@ async function water_your_plants(channel) {
       }
     });
     sendTopPlayersMessage(channel);
+    watered.push({userId: user.id, time: getTimeDifferenceString(message.createdTimestamp)});
+    message.edit({ content: `## ${cite}\n${watered.length} ${(watered.length > 1) ? "people have" : "person has"} been watered\n` + watered.map(w => `<@${w.userId}>: \`${w.time}\``).join("\n")});
   });
 
   collector.on("remove", (reaction, user) => {
@@ -164,6 +183,8 @@ async function water_your_plants(channel) {
         }
       });
     }
+    watered = watered.filter(item => item.userId !== user.id);
+    message.edit({ content: `## ${cite}\n${watered.length} ${(watered.length > 1) ? "people have" : "person has"} been watered\n` + watered.map(w => `<@${w.userId}>: \`${w.time}\``).join("\n")});
   });
 
   collector.on("end", (collected) => {
