@@ -128,7 +128,7 @@ function getTimeString(time) {
   const seconds = time / 1000;
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
-  return `${String(hours).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}:${String(seconds % 60).padStart(6, '0')}`;
+  return `${String(hours).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}:${String((seconds % 60).toFixed(3)).padStart(6, '0')}`;
 }
 
 function getTimeDifferenceString(start, end = Date.now()) {
