@@ -257,13 +257,24 @@ async function water_your_plants(channels) {
         });
       }
       watered = watered.filter((item) => item.userId !== user.id);
-      message.edit({
-        content:
-          `## ${cite}\n${watered.length} ${
-            watered.length == 1 ? "person has" : "people have"
-          } been watered\n` +
-          watered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
-      });
+      for (let i = 0; i < channels.length; i++) {
+        let message = messages[i];
+        let updateChannel = await client.channels.fetch(channels[i]);
+
+        let members = updateChannel.members;
+
+        sendTopPlayersMessage(updateChannel, members);
+        message.edit({
+          content:
+            `## ${cite}\n${watered.length} ${
+              watered.length == 1 ? "person has" : "people have"
+            } been watered\n` +
+            watered
+              .filter((p) => members.has(p.userId))
+              .map((w) => `<@${w.userId}>: \`${w.time}\``)
+              .join("\n"),
+        });
+      }
     });
 
     collector.on("end", (collected) => {
@@ -345,7 +356,7 @@ client.on("ready", async (client) => {
   water_interval = setInterval(() => {
     water_your_plants(config.active_channels);
   }, 3 * 60 * 60 * 1000); // 1 hour
-  water_your_plants([config.active_channels[0]]);
+  water_your_plants(config.active_channels);
 });
 
 // Log in to Discord with your client's token
