@@ -24,7 +24,6 @@ function reloadConfig() {
   }
   if (!config.active_channels || !config.active_channels.length) {
     console.log("No active_channels found in config.json");
-    exit(1);
   }
 }
 reloadConfig();
