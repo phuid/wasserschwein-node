@@ -1,10 +1,11 @@
 config.json example
+
 ```json
 {
-  "token": "DISCORD-BOT-TOKEN",
-  "channel_id": "USED-CHANNEL-ID",
+  "token": "YOUR_TOKEN",
+  "clientId": "YOUR_APPLICATION_ID",
+  "active_channels": [],
   "STRINGS": [
-    "yoy DSW MAaaAAAaN",
     "drink som wasser",
     "drink some water",
     "i believe you should drink some water",
@@ -29,7 +30,8 @@ config.json example
     "Your body is 60% water – keep it topped up!",
     "Water is life – drink it up!",
     "Hydrate now for a better later.",
-    "A hydrated body is a happy body."
+    "A hydrated body is a happy body.",
+    "It's unbelievable you need me to remind you of your basic needs\nDrink some watter :)"
   ]
 }
 ```
