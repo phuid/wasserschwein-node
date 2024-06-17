@@ -349,9 +349,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 client.on("ready", async (client) => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
 
-  const channel = await client.channels.fetch(config.active_channels[0]);
-
-  channel.send("start");
   water_interval = setInterval(() => {
     water_your_plants(config.active_channels);
   }, 3 * 60 * 60 * 1000); // 1 hour
