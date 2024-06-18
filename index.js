@@ -92,7 +92,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.GuildMembers,
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
@@ -239,7 +239,8 @@ async function water_your_plants(channels) {
         let message = messages[i];
         let updateChannel = await client.channels.fetch(channels[i]);
 
-        let members = updateChannel.members;
+        const guild = await client.guilds.fetch(updateChannel.guildId);
+        const members = await guild.members.fetch();
         console.log(members);
 
         sendTopPlayersMessage(updateChannel, members);
@@ -273,7 +274,8 @@ async function water_your_plants(channels) {
         let message = messages[i];
         let updateChannel = await client.channels.fetch(channels[i]);
 
-        let members = updateChannel.guild.members;
+        const guild = await client.guilds.fetch(updateChannel.guildId);
+        const members = await guild.members.fetch();
 
         sendTopPlayersMessage(updateChannel, members);
         message.edit({
