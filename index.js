@@ -101,16 +101,17 @@ const client = new Client({
 // It makes some properties non-nullable.
 // client.once(Events.ClientReady, (readyClient) => {});
 
-function getTopPlayers(members) {
-  const topPlayers = stats.players
-    .sort((a, b) => b.points - a.points)
-    .filter((p) => members.has(p.id))
-    .slice(0, 10);
-  return topPlayers;
+function getTopPlayers(members, local, head = 10) {
+  let topPlayers = stats.players
+    .sort((a, b) => b.points - a.points);
+  if (local) {
+    topPlayers.filter((p) => members.has(p.id));
+  }
+  return topPlayers.slice(0, head);
 }
 
-function getTopPlayersString(members) {
-  const topPlayers = getTopPlayers(members);
+function getTopPlayersString(members, local) {
+  const topPlayers = getTopPlayers(members, local);
   let topPlayersString = "";
   for (const [i, player] of topPlayers.entries()) {
     topPlayersString += `**${i + 1}. <@${player.id}>:**${
@@ -120,18 +121,21 @@ function getTopPlayersString(members) {
   return topPlayersString;
 }
 
-function getTopPlayersEmbed(members) {
+function getTopPlayersEmbed(members, local) {
   const embed = {
     color: 0x383d6b,
-    title: "Top 10 Players",
-    description: getTopPlayersString(members),
+    title: local ? "Local leaderboard" : "Global Leaderboard",
+    description: getTopPlayersString(members, local),
     fields: [],
   };
   return embed;
 }
 
 async function sendTopPlayersMessage(channel, members) {
-  const topPlayersEmbed = getTopPlayersEmbed(members);
+  const embeds = [
+    getTopPlayersEmbed(members, true),
+    getTopPlayersEmbed(members, false),
+  ];
   message_id = false;
   for (const result_message of stats.result_messages) {
     if (result_message.channel === channel.id) {
@@ -141,10 +145,10 @@ async function sendTopPlayersMessage(channel, members) {
   }
   if (message_id) {
     const message = await channel.messages.fetch(message_id);
-    message.edit({ embeds: [topPlayersEmbed] });
+    message.edit({ embeds: embeds });
   } else {
     const message = await channel.send({
-      embeds: [topPlayersEmbed],
+      embeds: embeds,
       fetchReply: true,
     });
 
