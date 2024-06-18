@@ -102,10 +102,13 @@ const client = new Client({
 // client.once(Events.ClientReady, (readyClient) => {});
 
 function getTopPlayers(members, local, head = 10) {
-  let topPlayers = stats.players
-    .sort((a, b) => b.points - a.points);
+  let topPlayers = stats.players.sort((a, b) => b.points - a.points);
   if (local) {
-    topPlayers.filter((p) => members.has(p.id));
+    console.log(members);
+    topPlayers.filter((p) => {
+      console.log(p.id + " " + members.has(p.id));
+      return members.has(p.id);
+    });
   }
   return topPlayers.slice(0, head);
 }
