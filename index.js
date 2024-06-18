@@ -233,6 +233,7 @@ async function water_your_plants(channels) {
         let updateChannel = await client.channels.fetch(channels[i]);
 
         let members = updateChannel.members;
+        console.log(members);
 
         sendTopPlayersMessage(updateChannel, members);
         message.edit({
