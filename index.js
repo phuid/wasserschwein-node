@@ -109,6 +109,7 @@ function getTopPlayers(members, local, head = 10) {
       console.log(p.id + " " + members.includes(p.id));
       return members.includes(p.id);
     });
+    console.log(topPlayers);
   }
   return topPlayers.slice(0, head);
 }
