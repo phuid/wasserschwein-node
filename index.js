@@ -273,7 +273,7 @@ async function water_your_plants(channels) {
         let message = messages[i];
         let updateChannel = await client.channels.fetch(channels[i]);
 
-        let members = updateChannel.members;
+        let members = updateChannel.guild.members;
 
         sendTopPlayersMessage(updateChannel, members);
         message.edit({
