@@ -106,8 +106,8 @@ function getTopPlayers(members, local, head = 10) {
   if (local) {
     console.log(members);
     topPlayers.filter((p) => {
-      console.log(p.id + " " + members.has(p.id));
-      return members.has(p.id);
+      console.log(p.id + " " + members.includes(p.id));
+      return members.includes(p.id);
     });
   }
   return topPlayers.slice(0, head);
