@@ -136,8 +136,8 @@ function getTopPlayersEmbed(members, local) {
 
 async function sendTopPlayersMessage(channel, members) {
   const embeds = [
-    getTopPlayersEmbed(members.map((m) => m.id), true),
-    getTopPlayersEmbed(members.map((m) => m.id), false),
+    getTopPlayersEmbed(members.map((m) => m.user.id), true),
+    getTopPlayersEmbed(members.map((m) => m.user.id), false),
   ];
   message_id = false;
   for (const result_message of stats.result_messages) {
