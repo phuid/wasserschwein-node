@@ -105,7 +105,7 @@ function getTopPlayers(members, local, head = 10) {
   let topPlayers = stats.players.sort((a, b) => b.points - a.points);
   if (local) {
     console.log(members);
-    topPlayers.filter((p) => {
+    topPlayers = topPlayers.filter((p) => {
       console.log(p.id + " " + members.includes(p.id));
       return members.includes(p.id);
     });
