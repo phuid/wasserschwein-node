@@ -243,16 +243,12 @@ async function water_your_plants(channels) {
         console.log(members);
 
         sendTopPlayersMessage(updateChannel, members);
-        const filtered = watered.filter((p) =>
-          members.map((m) => m.user.id).includes(p.userId)
-        );
-        console.log("watered", watered, "filtered", filtered);
         message.edit({
           content:
             `## ${cite}\n${watered.length} ${
               watered.length == 1 ? "person has" : "people have"
             } been watered\n` +
-            filtered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
+            watered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
         });
       }
     });
@@ -280,15 +276,12 @@ async function water_your_plants(channels) {
         let members = updateChannel.members;
 
         sendTopPlayersMessage(updateChannel, members);
-        const filtered = watered.filter((p) =>
-          members.map((m) => m.user.id).includes(p.userId)
-        );
         message.edit({
           content:
             `## ${cite}\n${watered.length} ${
               watered.length == 1 ? "person has" : "people have"
             } been watered\n` +
-            filtered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
+            watered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
         });
       }
     });
