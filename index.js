@@ -137,8 +137,14 @@ function getTopPlayersEmbed(members, local) {
 
 async function sendTopPlayersMessage(channel, members) {
   const embeds = [
-    getTopPlayersEmbed(members.map((m) => m.user.id), true),
-    getTopPlayersEmbed(members.map((m) => m.user.id), false),
+    getTopPlayersEmbed(
+      members.map((m) => m.user.id),
+      true
+    ),
+    getTopPlayersEmbed(
+      members.map((m) => m.user.id),
+      false
+    ),
   ];
   message_id = false;
   for (const result_message of stats.result_messages) {
@@ -236,15 +242,16 @@ async function water_your_plants(channels) {
         console.log(members);
 
         sendTopPlayersMessage(updateChannel, members);
+        const filtered = watered.filter((p) =>
+          members.map((m) => m.user.id).includes(p.userId)
+        );
+        console.log("watered", watered, "filtered", filtered);
         message.edit({
           content:
             `## ${cite}\n${watered.length} ${
               watered.length == 1 ? "person has" : "people have"
             } been watered\n` +
-            watered
-              .filter((p) => members.map((m) => m.user.id).includes(p.userId))
-              .map((w) => `<@${w.userId}>: \`${w.time}\``)
-              .join("\n"),
+            filtered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
         });
       }
     });
@@ -272,15 +279,15 @@ async function water_your_plants(channels) {
         let members = updateChannel.members;
 
         sendTopPlayersMessage(updateChannel, members);
+        const filtered = watered.filter((p) =>
+          members.map((m) => m.user.id).includes(p.userId)
+        );
         message.edit({
           content:
             `## ${cite}\n${watered.length} ${
               watered.length == 1 ? "person has" : "people have"
             } been watered\n` +
-            watered
-              .filter((p) => members.map((m) => m.user.id).includes(p.userId))
-              .map((w) => `<@${w.userId}>: \`${w.time}\``)
-              .join("\n"),
+            filtered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
         });
       }
     });
