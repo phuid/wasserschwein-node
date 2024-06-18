@@ -242,7 +242,7 @@ async function water_your_plants(channels) {
               watered.length == 1 ? "person has" : "people have"
             } been watered\n` +
             watered
-              .filter((p) => members.has(p.userId))
+              .filter((p) => members.map((m) => m.user.id).includes(p.userId))
               .map((w) => `<@${w.userId}>: \`${w.time}\``)
               .join("\n"),
         });
@@ -278,7 +278,7 @@ async function water_your_plants(channels) {
               watered.length == 1 ? "person has" : "people have"
             } been watered\n` +
             watered
-              .filter((p) => members.has(p.userId))
+              .filter((p) => members.map((m) => m.user.id).includes(p.userId))
               .map((w) => `<@${w.userId}>: \`${w.time}\``)
               .join("\n"),
         });
