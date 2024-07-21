@@ -28,11 +28,6 @@ function reloadConfig() {
 }
 reloadConfig();
 
-if (!fs.existsSync("./stats.json")) {
-  console.log("stats.json does not exist");
-  fs.writeFileSync("stats.json", '{"players":[]}');
-}
-
 const { get } = require("http");
 
 let stats = {
@@ -52,6 +47,12 @@ function moveStatsToOld() {
 }
 
 function reloadStats() {
+
+  if (!fs.existsSync("./stats.json")) {
+    console.log("stats.json does not exist");
+    return;
+  }
+
   const saved_stats = require("./stats.json");
   if (
     saved_stats.hasOwnProperty("players") &&
@@ -61,7 +62,8 @@ function reloadStats() {
   ) {
     for (const player of saved_stats.players) {
       if (!player.hasOwnProperty("id") || !player.hasOwnProperty("points")) {
-        console.log("Invalid player found in stats.json");
+        console.log("Invalid player found in stats.json:");
+        console.log(player);
         moveStatsToOld();
         break;
       }
@@ -71,11 +73,13 @@ function reloadStats() {
         !result_message.hasOwnProperty("channel") ||
         !result_message.hasOwnProperty("id")
       ) {
-        console.log("Invalid result_message found in stats.json");
+        console.log("Invalid result_message found in stats.json:");
+        console.log(result_message);
         moveStatsToOld();
         break;
       }
     }
+    console.log("success - reloadStats()");
     stats = saved_stats;
   } else {
     console.log(
@@ -105,12 +109,10 @@ const client = new Client({
 function getTopPlayers(members, local, head = 10) {
   let topPlayers = stats.players.sort((a, b) => b.points - a.points);
   if (local) {
-    console.log(members);
     topPlayers = topPlayers.filter((p) => {
       console.log(p.id + " " + members.includes(p.id));
       return members.includes(p.id);
     });
-    console.log(topPlayers);
   }
   return topPlayers.slice(0, head);
 }
@@ -148,6 +150,8 @@ async function sendTopPlayersMessage(channel, members) {
     ),
   ];
   message_id = false;
+  process.stdout.write("result_messages: ");
+  console.log(stats.result_messages);
   for (const result_message of stats.result_messages) {
     if (result_message.channel === channel.id) {
       message_id = result_message.id;
@@ -155,9 +159,11 @@ async function sendTopPlayersMessage(channel, members) {
     }
   }
   if (message_id) {
+    console.log("found result message for channel " + channel.id + " (" + channel.name + ")")
     const message = await channel.messages.fetch(message_id);
     message.edit({ embeds: embeds });
   } else {
+    console.log("didnt find result message for channel " + channel.id);
     const message = await channel.send({
       embeds: embeds,
       fetchReply: true,
@@ -241,7 +247,6 @@ async function water_your_plants(channels) {
 
         const guild = await client.guilds.fetch(updateChannel.guildId);
         const members = await guild.members.fetch();
-        console.log(members);
 
         sendTopPlayersMessage(updateChannel, members);
         message.edit({
