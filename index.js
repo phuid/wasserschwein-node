@@ -8,6 +8,7 @@ const {
 const fs = require("fs");
 const { exit, send } = require("process");
 const path = require("path");
+const cron = require('node-cron');
 
 if (!fs.existsSync("./config.json")) {
   console.log("config.json does not exist");
@@ -363,13 +364,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
+// const SECOND_MS = 1000;
+// const MINUTE_MS = 60 * SECOND_MS
+// const HOUR_MS = 60 * MINUTE_MS;
+
 client.on("ready", async (client) => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
 
-  water_interval = setInterval(() => {
+  water_interval = cron.schedule('30 1,4,7,10,13,16,19,22 * * *', () => {
     water_your_plants(config.active_channels);
-  }, 3 * 60 * 60 * 1000); // 1 hour
-  water_your_plants(config.active_channels);
+  });
+  water_your_plants([config.active_channels[0]]);
 });
 
 // Log in to Discord with your client's token
