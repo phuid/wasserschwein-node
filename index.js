@@ -122,9 +122,8 @@ function getTopPlayersString(members, local) {
   const topPlayers = getTopPlayers(members, local);
   let topPlayersString = "";
   for (const [i, player] of topPlayers.entries()) {
-    topPlayersString += `**${i + 1}. <@${player.id}>:**${
-      player.points
-    } points\n`;
+    topPlayersString += `**${i + 1}. <@${player.id}>:**${player.points
+      } points\n`;
   }
   return topPlayersString;
 }
@@ -230,8 +229,10 @@ async function water_your_plants(channels) {
       const player = stats.players.find((p) => p.id === user.id);
       if (player) {
         player.points += 1;
+        player.monthly += 1;
+        player.weekly += 1;
       } else {
-        stats.players.push({ id: user.id, points: 1 });
+        stats.players.push({ id: user.id, points: 1, monthly: 1, weekly: 1});
       }
       fs.writeFile("stats.json", JSON.stringify(stats), "utf8", (err) => {
         if (err) {
@@ -252,8 +253,7 @@ async function water_your_plants(channels) {
         sendTopPlayersMessage(updateChannel, members);
         message.edit({
           content:
-            `## ${cite}\n${watered.length} ${
-              watered.length == 1 ? "person has" : "people have"
+            `## ${cite}\n${watered.length} ${watered.length == 1 ? "person has" : "people have"
             } been watered\n` +
             watered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
         });
@@ -269,6 +269,8 @@ async function water_your_plants(channels) {
       const player = stats.players.find((p) => p.id === user.id);
       if (player) {
         player.points -= 1;
+        player.monthly -= 1;
+        player.weekly -= 1;
         fs.writeFile("stats.json", JSON.stringify(stats), "utf8", (err) => {
           if (err) {
             console.log("Error writing stats.json:", err);
@@ -286,8 +288,7 @@ async function water_your_plants(channels) {
         sendTopPlayersMessage(updateChannel, members);
         message.edit({
           content:
-            `## ${cite}\n${watered.length} ${
-              watered.length == 1 ? "person has" : "people have"
+            `## ${cite}\n${watered.length} ${watered.length == 1 ? "person has" : "people have"
             } been watered\n` +
             watered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
         });
@@ -299,8 +300,6 @@ async function water_your_plants(channels) {
     });
   });
 }
-
-let water_interval;
 
 client.commands = new Collection();
 
@@ -371,9 +370,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
 client.on("ready", async (client) => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
 
-  water_interval = cron.schedule('30 1,4,7,10,13,16,19,22 * * *', () => {
+  cron.schedule('30 1,4,7,10,13,16,19,22 * * *', () => {
     water_your_plants(config.active_channels);
   });
+
+  cron.schedule('0 0 1 * *', () => {
+    resetMonthlyData();
+    newMontlyMessage();
+  });
+
+  cron.schedule('0 0 * * 1', () => {
+    resetWeeklyData();
+    newWeeklyMessage();
+  });
+
   water_your_plants([config.active_channels[0]]);
 });
 
