@@ -176,7 +176,7 @@ function getTopPlayersString(members, local, time_limited) {
 function getTopPlayersEmbed(members, local, time_limited) {
   const embed = {
     color: 0x383d6b,
-    title: local ? "Local leaderboard" : "Global Leaderboard",
+    title: (local ? "Local" : "Global") + (time_limited == "false" ? "" : (" " + time_limited)) + " leaderboard",
     description: getTopPlayersString(members, local, time_limited),
     fields: [],
   };
@@ -197,13 +197,12 @@ async function sendTopPlayersMessage(channel, members, time_limited = "false") {
       time_limited
     ),
   ];
-  //TODO: continue here with time_limited changes
   message_id = false;
-  process.stdout.write("result_messages: ");
+  process.stdout.write("time limited: " + time_limited + "; result_messages: ");
   console.log(stats.result_messages);
   for (const result_message of stats.result_messages) {
     if (result_message.channel === channel.id) {
-      message_id = result_message.id;
+      message_id = (time_limited == "false") ? result_message.id : (time_limited == "weekly") ? result_message.weekly : (time_limited == "monthly") ? result_message.monthly : (time_limited == "yearly") ? result_message.yearly : undefined;
       break;
     }
   }
@@ -218,12 +217,133 @@ async function sendTopPlayersMessage(channel, members, time_limited = "false") {
       fetchReply: true,
     });
 
-    stats.result_messages.push({ channel: channel.id, id: message.id });
+    if (message_id === false) {
+      //create a new entry in result_messages because this channel doesnt have one yet
+      switch (time_limited) {
+        case "false":
+          stats.result_messages.push({ channel: channel.id, id: message.id });
+          break;
+
+        case "weekly":
+          stats.result_messages.push({ channel: channel.id, weekly: message.id });
+          break;
+
+        case "monthly":
+          stats.result_messages.push({ channel: channel.id, monthly: message.id });
+          break;
+
+        case "yearly":
+          stats.result_messages.push({ channel: channel.id, yearly: message.id });
+          break;
+
+        default:
+          console.error("error: sendTopPlayersMessage() got \"" + time_limited + "\" as time_limited argument - INVALID ARGUMENT");
+          break;
+      }
+    }
+    else {
+      //add to the entry in result messages this channel already has
+      stats.result_messages.forEach((result_message, index) => {
+        if (result_message.channel === channel.id) {
+          switch (time_limited) {
+            case "false":
+              this[index].id = message.id;
+              break;
+
+            case "weekly":
+              this[index].weekly = message.id;
+              break;
+
+            case "monthly":
+              this[index].monthly = message.id;
+              break;
+
+            case "yearly":
+              this[index].yearly = message.id;
+              break;
+
+            default:
+              console.error("error: getTopPlayers() got \"" + time_limited + "\" as time_limited argument - INVALID ARGUMENT");
+              break;
+          }
+          return;
+        }
+      }, stats.result_messages); {
+      }
+    }
+
     fs.writeFile("stats.json", JSON.stringify(stats), "utf8", (err) => {
       if (err) {
-        console.log("Error writing stats.json:", err);
+        console.error("Error writing stats.json:", err);
+        console.log("here are the stats that i couldnt save:\n" + JSON.stringify(stats) + "\n");
       }
     });
+  }
+}
+
+function resetTimeLimitedData(time_limited) {
+  stats.players.forEach((player, index) => {
+    switch (time_limited) {
+      case "false":
+        console.error("error: trying to reset all time score if forbidden in resetTimeLimitedData function");
+        break;
+
+      case "weekly":
+        this[index].weekly = 0;
+        break;
+
+      case "monthly":
+        this[index].monthly = 0;
+        break;
+
+      case "yearly":
+        this[index].yearly = 0;
+        break;
+
+      default:
+        console.error("error: resetTimeLimitedData() got \"" + time_limited + "\" as time_limited argument - INVALID ARGUMENT");
+        break;
+    }
+  }, stats.players)
+
+  fs.writeFile("stats.json", JSON.stringify(stats), "utf8", (err) => {
+    if (err) {
+      console.error("Error writing stats.json:", err);
+      console.log("here are the stats that i couldnt save:\n" + JSON.stringify(stats) + "\n");
+    }
+  });
+}
+
+async function newTimeLimitedMessage(channel, members, time_limited) {
+  const embeds = [
+    getTopPlayersEmbed(
+      members.map((m) => m.user.id),
+      true,
+      time_limited
+    ),
+    getTopPlayersEmbed(
+      members.map((m) => m.user.id),
+      false,
+      time_limited
+    ),
+  ];
+  await channel.send({
+    content: time_limited + " leaderboard just ended! take a look at the results :eyes:",
+    embeds: embeds,
+  });
+  //TODO: records here!
+  resetTimeLimitedData(time_limited);
+  sendTopPlayersMessage(channel, members, time_limited);
+}
+
+async function newTimeLimitedMessages(channels, time_limited) {
+  for (const channel of channels) {
+    let updateChannel = await client.channels.fetch(channels[i]);
+
+    const guild = await client.guilds.fetch(updateChannel.guildId);
+    const members = await guild.members.fetch();
+
+    newTimeLimitedMessage(updateChannel, members, time_limited);
   }
 }
 
@@ -416,18 +536,15 @@ client.on("ready", async (client) => {
   });
 
   cron.schedule('0 0 * * 1', () => {
-    resetTimeLimitedData("weekly");
-    newWeeklyMessage(config.active_channels);
+    newTimeLimitedMessages(config.active_channels, "weekly");
   });
 
   cron.schedule('0 0 1 * *', () => {
-    resetTimeLimitedData("monthly");
-    newMontlyMessage(config.active_channels);
+    newTimeLimitedMessages(config.active_channels, "monthly");
   });
 
   cron.schedule('0 0 1 1 *', () => {
-    resetTimeLimitedData("yearly");
-    newWeeklyMessage(config.active_channels);
+    newTimeLimitedMessages(config.active_channels, "yearly");
   });
 
   water_your_plants([config.active_channels[0]]);
