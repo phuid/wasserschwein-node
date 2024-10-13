@@ -30,6 +30,7 @@ function reloadConfig() {
 reloadConfig();
 
 const { get } = require("http");
+const { channel } = require("diagnostics_channel");
 
 let stats = {
   players: [],
@@ -107,8 +108,29 @@ const client = new Client({
 // It makes some properties non-nullable.
 // client.once(Events.ClientReady, (readyClient) => {});
 
-function getTopPlayers(members, local, head = 10) {
-  let topPlayers = stats.players.sort((a, b) => b.points - a.points);
+function getTopPlayers(members, local, head = 10, time_limited) {
+  let topPlayers;
+  switch (time_limited) {
+    case "false":
+      topPlayers = stats.players.sort((a, b) => b.points - a.points);
+      break;
+
+    case "weekly":
+      topPlayers = stats.players.sort((a, b) => b.weekly - a.weekly);
+      break;
+
+    case "monthly":
+      topPlayers = stats.players.sort((a, b) => b.monthly - a.monthly);
+      break;
+
+    case "yearly":
+      topPlayers = stats.players.sort((a, b) => b.yearly - a.yearly);
+      break;
+
+    default:
+      console.error("error: getTopPlayers() got \"" + time_limited + "\" as time_limited argument - INVALID ARGUMENT");
+      break;
+  }
   if (local) {
     topPlayers = topPlayers.filter((p) => {
       console.log(p.id + " " + members.includes(p.id));
@@ -118,37 +140,64 @@ function getTopPlayers(members, local, head = 10) {
   return topPlayers.slice(0, head);
 }
 
-function getTopPlayersString(members, local) {
-  const topPlayers = getTopPlayers(members, local);
+function getTopPlayersString(members, local, time_limited) {
+  const topPlayers = getTopPlayers(members, local, time_limited);
   let topPlayersString = "";
   for (const [i, player] of topPlayers.entries()) {
-    topPlayersString += `**${i + 1}. <@${player.id}>:**${player.points
+    let timed_points;
+    switch (time_limited) {
+      case "false":
+        timed_points = player.points;
+        break;
+
+      case "weekly":
+        timed_points = player.weekly;
+        break;
+
+      case "monthly":
+        timed_points = player.monthly;
+        break;
+
+      case "yearly":
+        timed_points = player.yearly;
+        break;
+
+      default:
+        console.error("error: getTopPlayersString() got \"" + time_limited + "\" as time_limited argument - INVALID ARGUMENT");
+        break;
+    }
+
+    topPlayersString += `**${i + 1}. <@${player.id}>:**${timed_points
       } points\n`;
   }
   return topPlayersString;
 }
 
-function getTopPlayersEmbed(members, local) {
+function getTopPlayersEmbed(members, local, time_limited) {
   const embed = {
     color: 0x383d6b,
     title: local ? "Local leaderboard" : "Global Leaderboard",
-    description: getTopPlayersString(members, local),
+    description: getTopPlayersString(members, local, time_limited),
     fields: [],
   };
   return embed;
 }
 
-async function sendTopPlayersMessage(channel, members) {
+//time_limited {"false", "monthly", "weekly", "yearly"}
+async function sendTopPlayersMessage(channel, members, time_limited = "false") {
   const embeds = [
     getTopPlayersEmbed(
       members.map((m) => m.user.id),
-      true
+      true,
+      time_limited
     ),
     getTopPlayersEmbed(
       members.map((m) => m.user.id),
-      false
+      false,
+      time_limited
     ),
   ];
+  //TODO: continue here with time_limited changes
   message_id = false;
   process.stdout.write("result_messages: ");
   console.log(stats.result_messages);
@@ -197,6 +246,24 @@ function getTimeDifferenceString(start, end = Date.now()) {
   return getTimeString(end - start);
 }
 
+async function updateResults(channels, messages, watered) {
+  for (let i = 0; i < channels.length; i++) {
+    let message = messages[i];
+    let updateChannel = await client.channels.fetch(channels[i]);
+
+    const guild = await client.guilds.fetch(updateChannel.guildId);
+    const members = await guild.members.fetch();
+
+    sendTopPlayersMessage(updateChannel, members);
+    message.edit({
+      content:
+        `## ${cite}\n${watered.length} ${watered.length == 1 ? "person has" : "people have"
+        } been watered\n` +
+        watered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
+    });
+  }
+}
+
 async function water_your_plants(channels) {
   let cite = config.STRINGS[Math.floor(Math.random() * config.STRINGS.length)];
 
@@ -229,10 +296,11 @@ async function water_your_plants(channels) {
       const player = stats.players.find((p) => p.id === user.id);
       if (player) {
         player.points += 1;
-        player.monthly += 1;
         player.weekly += 1;
+        player.monthly += 1;
+        player.yearly += 1;
       } else {
-        stats.players.push({ id: user.id, points: 1, monthly: 1, weekly: 1});
+        stats.players.push({ id: user.id, points: 1, weekly: 1, monthly: 1, yearly: 1 });
       }
       fs.writeFile("stats.json", JSON.stringify(stats), "utf8", (err) => {
         if (err) {
@@ -243,21 +311,7 @@ async function water_your_plants(channels) {
         userId: user.id,
         time: getTimeDifferenceString(message.createdTimestamp),
       });
-      for (let i = 0; i < channels.length; i++) {
-        let message = messages[i];
-        let updateChannel = await client.channels.fetch(channels[i]);
-
-        const guild = await client.guilds.fetch(updateChannel.guildId);
-        const members = await guild.members.fetch();
-
-        sendTopPlayersMessage(updateChannel, members);
-        message.edit({
-          content:
-            `## ${cite}\n${watered.length} ${watered.length == 1 ? "person has" : "people have"
-            } been watered\n` +
-            watered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
-        });
-      }
+      await updateResults(channels, messages, watered);
     });
 
     collector.on("remove", async (reaction, user) => {
@@ -269,8 +323,9 @@ async function water_your_plants(channels) {
       const player = stats.players.find((p) => p.id === user.id);
       if (player) {
         player.points -= 1;
-        player.monthly -= 1;
         player.weekly -= 1;
+        player.monthly -= 1;
+        player.yearly -= 1;
         fs.writeFile("stats.json", JSON.stringify(stats), "utf8", (err) => {
           if (err) {
             console.log("Error writing stats.json:", err);
@@ -278,21 +333,7 @@ async function water_your_plants(channels) {
         });
       }
       watered = watered.filter((item) => item.userId !== user.id);
-      for (let i = 0; i < channels.length; i++) {
-        let message = messages[i];
-        let updateChannel = await client.channels.fetch(channels[i]);
-
-        const guild = await client.guilds.fetch(updateChannel.guildId);
-        const members = await guild.members.fetch();
-
-        sendTopPlayersMessage(updateChannel, members);
-        message.edit({
-          content:
-            `## ${cite}\n${watered.length} ${watered.length == 1 ? "person has" : "people have"
-            } been watered\n` +
-            watered.map((w) => `<@${w.userId}>: \`${w.time}\``).join("\n"),
-        });
-      }
+      await updateResults(channels, messages, watered);
     });
 
     collector.on("end", (collected) => {
@@ -374,14 +415,19 @@ client.on("ready", async (client) => {
     water_your_plants(config.active_channels);
   });
 
-  cron.schedule('0 0 1 * *', () => {
-    resetMonthlyData();
-    newMontlyMessage();
+  cron.schedule('0 0 * * 1', () => {
+    resetTimeLimitedData("weekly");
+    newWeeklyMessage(config.active_channels);
   });
 
-  cron.schedule('0 0 * * 1', () => {
-    resetWeeklyData();
-    newWeeklyMessage();
+  cron.schedule('0 0 1 * *', () => {
+    resetTimeLimitedData("monthly");
+    newMontlyMessage(config.active_channels);
+  });
+
+  cron.schedule('0 0 1 1 *', () => {
+    resetTimeLimitedData("yearly");
+    newWeeklyMessage(config.active_channels);
   });
 
   water_your_plants([config.active_channels[0]]);
