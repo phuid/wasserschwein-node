@@ -108,7 +108,7 @@ const client = new Client({
 // It makes some properties non-nullable.
 // client.once(Events.ClientReady, (readyClient) => {});
 
-function getTopPlayers(members, local, head = 10, time_limited) {
+function getTopPlayers(members, local, time_limited, head = 10) {
   let topPlayers;
   switch (time_limited) {
     case "false":
@@ -366,7 +366,7 @@ function getTimeDifferenceString(start, end = Date.now()) {
   return getTimeString(end - start);
 }
 
-async function updateResults(channels, messages, watered) {
+async function updateResults(channels, messages, watered, cite) {
   for (let i = 0; i < channels.length; i++) {
     let message = messages[i];
     let updateChannel = await client.channels.fetch(channels[i]);
@@ -431,7 +431,7 @@ async function water_your_plants(channels) {
         userId: user.id,
         time: getTimeDifferenceString(message.createdTimestamp),
       });
-      await updateResults(channels, messages, watered);
+      await updateResults(channels, messages, watered, cite);
     });
 
     collector.on("remove", async (reaction, user) => {
@@ -453,7 +453,7 @@ async function water_your_plants(channels) {
         });
       }
       watered = watered.filter((item) => item.userId !== user.id);
-      await updateResults(channels, messages, watered);
+      await updateResults(channels, messages, watered, cite);
     });
 
     collector.on("end", (collected) => {
