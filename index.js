@@ -338,7 +338,7 @@ async function newTimeLimitedMessage(channel, members, time_limited) {
 
 async function newTimeLimitedMessages(channels, time_limited) {
   for (const channel of channels) {
-    let updateChannel = await client.channels.fetch(channels[i]);
+    let updateChannel = await client.channels.fetch(channel);
 
     const guild = await client.guilds.fetch(updateChannel.guildId);
     const members = await guild.members.fetch();
