@@ -9,6 +9,7 @@ const fs = require("fs");
 const { exit, send } = require("process");
 const path = require("path");
 const cron = require('node-cron');
+const { fetch_meme_url } = require("./fetch_meme.js");
 
 if (!fs.existsSync("./config.json")) {
   console.log("config.json does not exist");
@@ -386,6 +387,10 @@ async function updateResults(channels, messages, watered, cite) {
 
 async function water_your_plants(channels) {
   let cite = config.STRINGS[Math.floor(Math.random() * config.STRINGS.length)];
+  let meme = await fetch_meme_url();
+  if (!meme.error) {
+    cite += meme.cite + "\nhere's your random water drinking meme (keywords: " + meme.keywords + "):\n" + meme.url;
+  }
 
   // array to store times of watering
   let watered = [];
